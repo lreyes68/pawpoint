@@ -2,8 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from flask_login import UserMixin, LoginManager, login_user, logout_user, login_required
+from flask_login import UserMixin, LoginManager, login_user, logout_user
 from dotenv import load_dotenv
+from flask_jwt_extended import set_access_cookies, create_access_token, JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
 
 import os
 
@@ -15,7 +16,15 @@ load_dotenv()
 #keeping values hidden, will help when we transition to web
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 
+#!!! set True in production !!!
+app.config['JWT_COOKIE_SECURE'] = False
+
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True 
+
+jwt = JWTManager(app)
 db = SQLAlchemy(app)
 
 class User(UserMixin, db.Model):
@@ -54,15 +63,22 @@ def login():
         #If verificaton passes, login user
         login_user(user)
         
-        return redirect(url_for('main'))
+        access_token = create_access_token(identity=username)
+        response = redirect(url_for('main'))
+        
+        set_access_cookies(response, access_token)
+        
+        return response
         
     #Renders the initial page    
     return render_template('login.html')
 
 #Routes to main page
 @app.route('/main')
+@jwt_required()
 def main():
-    return render_template('main.html')
+    current_user = get_jwt_identity()
+    return render_template('main.html', username=current_user)
 
 #Registers User with hash encryption
 @app.route('/register', methods=['GET', 'POST'])
@@ -73,7 +89,7 @@ def register():
         
         #Data validation check
         if not username or not password:
-            flash("All fields are requires", "danger")
+            flash("All fields are required", "danger")
             return render_template("register.html")
         
         #creates encrypted password
@@ -98,10 +114,12 @@ def register():
     return render_template('register.html')
         
 @app.route('/logout')
-@login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    response = redirect(url_for('login'))
+    unset_jwt_cookies(response)
+    flash("Logged out", "info")
+    return response
 
 if __name__ == '__main__':
     with app.app_context():

@@ -1,2 +1,2 @@
 Current pip requirements:
-flask, flask_bcrypt, flask_sqlalchemy, flask_login, dotenv
+flask, flask_bcrypt, flask_sqlalchemy, flask_login, dotenv, flask_jwt_extended
