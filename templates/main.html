@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <title>pawpoint</title>
+</head>
+<body>
+    <div class="user-info">
+        <span>Welcome {{ current_user.username }}!</span>
+        <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    </div>
+</body>
+</html>
