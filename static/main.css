@@ -1,0 +1,38 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-height: 70vh;
+    background-color: rgb(225, 224, 224);
+}
+
+.user-info {
+    position: fixed;   
+    top: 0;             
+    left: 0;            
+    width: 100%;      
+    
+    display: flex;     
+    justify-content: space-between; 
+    align-items: center;
+    padding: 10px 20px; 
+    background-color: orange;
+    z-index: 1000;    
+    box-sizing: border-box; 
+}
+
+.btn-logout {
+    text-decoration: none;
+    color: black;
+}
+
+#map {
+    height: 250px;
+    width: 25%;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;  
+    border-radius: 10px; 
+    border: 2px solid orange;
+}
