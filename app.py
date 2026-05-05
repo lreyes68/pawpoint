@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask_jwt_extended import set_access_cookies, create_access_token, JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
 
 import os
+from datetime import timedelta
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -18,6 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_EXPIRATION_DELTA'] = timedelta(days=7)
 
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
