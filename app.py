@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
@@ -8,6 +8,7 @@ from flask_jwt_extended import set_access_cookies, create_access_token, JWTManag
 
 import os
 import math
+from datetime import timedelta 
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -19,6 +20,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_ACCESS']
 
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
@@ -146,7 +148,12 @@ def process_guess():
     
     print(f"feet away: {round(distance, 1)}")
     
-    return data
+    return jsonify({
+        'distance': round(distance, 2),
+        "target": {"lat": target_lat, "lng": target_lang}
+    })
+
+@app.route('/distance')
         
 @app.route('/logout')
 def logout():
