@@ -5,18 +5,18 @@
 
 
 document.addEventListener("DOMContentLoaded", function() {
-    var map = L.map('map').setView([37.3644754,-120.4231159], 16);
+    var map = L.map('map').setView([37.3661,-120.4233], 16);
     var currentMarker
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 20,
+        keepBuffer: 10,
     }).addTo(map);
 
     function onMapClick(e) {
         if(currentMarker) {
             map.removeLayer(currentMarker)
         }
-
         currentMarker = L.marker(e.latlng).addTo(map)
     }
 
