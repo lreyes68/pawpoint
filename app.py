@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask_jwt_extended import set_access_cookies, create_access_token, JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
 
 import os
+import math
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -35,6 +36,23 @@ class User(UserMixin, db.Model):
     
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+def calcDistance(lat1, lat2, lng1, lng2):
+    earth_radius = 3959 #miles
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lng1 = math.radians(lng1)
+    lng2 = math.radians(lng2)
+    
+    dlat = lat2 - lat1
+    dlng = lng2 - lng1
+    
+    hav = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlng/2)**2
+    
+    theta = 2*math.asin(math.sqrt(hav))
+    distance = earth_radius*theta
+    
+    return distance
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -116,7 +134,17 @@ def register():
 @app.route('/guess', methods=['POST'])
 def process_guess():
     data = request.get_json()
-    print(data)
+        
+    response_lat = data['lat']
+    response_lang = data['lang']
+    
+    #test data: CTK Quad
+    target_lat = 37.36620076648134
+    target_lang = -120.42320671417902
+    
+    distance = calcDistance(response_lat, target_lat, response_lang, target_lang) * 5280 #Feet
+    
+    print(f"feet away: {round(distance, 1)}")
     
     return data
         
