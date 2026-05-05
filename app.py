@@ -112,6 +112,13 @@ def register():
             
             
     return render_template('register.html')
+
+@app.route('/guess', methods=['POST'])
+def process_guess():
+    data = request.get_json()
+    print(data)
+    
+    return data
         
 @app.route('/logout')
 def logout():
@@ -119,6 +126,14 @@ def logout():
     response = redirect(url_for('login'))
     unset_jwt_cookies(response)
     flash("Logged out", "info")
+    return response
+
+@jwt.expired_token_loader
+def expired_token(jwt_header, jwt_payload):
+    response = redirect(url_for('login'))
+    
+    unset_jwt_cookies(response)
+    
     return response
 
 if __name__ == '__main__':

@@ -12,8 +12,10 @@
         <span>Welcome {{ current_user.username }}!</span>
         <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
     </nav>
-
-    <div id="map"></div>
+    <div class="mini-map">
+        <div id="map"></div>
+        <button id="map-button">GUESS</button>
+    </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{{ url_for('static', filename='game.js') }}"></script>

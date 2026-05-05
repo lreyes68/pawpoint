@@ -27,12 +27,30 @@ body {
     color: black;
 }
 
-#map {
-    height: 300px;
-    width: 25%;
+.mini-map {
     position: fixed;
     bottom: 20px;
-    right: 20px;  
+    right: 20px;
+    width: 25%; 
+    display: flex;
+    flex-direction: column;
+    gap: 10px; 
+}
+
+.mini-map button {
+    padding-top: 0;
+    background-color: rgb(65, 177, 65);
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    cursor: pointer;
+    font-size: medium;
+}
+
+#map {
+    height: 300px;
+    width: 100%;
     border-radius: 10px; 
     border: 2px solid orange;
 }
+
