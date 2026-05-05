@@ -20,12 +20,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
-app.config['JWT_ACCESS']
+app.config['JWT_EXPIRATION_DELTA'] = timedelta(days=7)
 
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
 
-app.config['JWT_COOKIE_CSRF_PROTECT'] = True 
+#TODO: figureout how to use CSRF when sending player guess, weird cookie thing.
+app.config['JWT_COOKIE_CSRF_PROTECT'] = False 
 
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
@@ -39,6 +40,7 @@ class User(UserMixin, db.Model):
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+#Function used to calculate distance between the guess and target.
 def calcDistance(lat1, lat2, lng1, lng2):
     earth_radius = 3959 #miles
     lat1 = math.radians(lat1)
@@ -54,6 +56,7 @@ def calcDistance(lat1, lat2, lng1, lng2):
     theta = 2*math.asin(math.sqrt(hav))
     distance = earth_radius*theta
     
+    #returns float
     return distance
 
 @login_manager.user_loader
@@ -133,27 +136,32 @@ def register():
             
     return render_template('register.html')
 
+#serverside guess processing
 @app.route('/guess', methods=['POST'])
+@jwt_required()
 def process_guess():
     data = request.get_json()
         
     response_lat = data['lat']
     response_lang = data['lang']
     
-    #test data: CTK Quad
+    #test data: CTK Quad 
+    #Should grab lat and lang from database when we have it ready
+    
     target_lat = 37.36620076648134
     target_lang = -120.42320671417902
     
     distance = calcDistance(response_lat, target_lat, response_lang, target_lang) * 5280 #Feet
     
+    #Used to debug, will remove later
     print(f"feet away: {round(distance, 1)}")
     
+    #Sends the distance from the target and coordinates back to browser
     return jsonify({
         'distance': round(distance, 2),
         "target": {"lat": target_lat, "lng": target_lang}
     })
 
-@app.route('/distance')
         
 @app.route('/logout')
 def logout():
@@ -163,6 +171,7 @@ def logout():
     flash("Logged out", "info")
     return response
 
+#Runs once JWT token expires
 @jwt.expired_token_loader
 def expired_token(jwt_header, jwt_payload):
     response = redirect(url_for('login'))
