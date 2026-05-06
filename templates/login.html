@@ -4,33 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
-    <title>pawpoint</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <title>PawPoint — Sign In</title>
 </head>
 <body>
-    <div class="login">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">
-              {{ message }}
-            </div>
-          {% endfor %}
-        {% endif %}
-    {% endwith %}        
-    <form action="{{ url_for('login') }}" method="POST">
-        <h1>Welcome</h1>
-        <div>
-            
-            <input class="input" type="text" name="username" placeholder="Username" required>
+
+  <!-- Background carousel -->
+  <div class="page-bg-wrapper">
+    <div class="bg-layer" id="bg-layer-0"></div>
+    <div class="bg-layer" id="bg-layer-1"></div>
+    <div class="bg-overlay"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <a class="logo" href="#">
+      <span class="paw">🐾</span> PawPoint
+    </a>
+  </header>
+
+  <!-- Main -->
+  <main class="page-main">
+
+    <!-- Left: Hero -->
+    <section class="hero">
+      <h1>Welcome to PawPoint</h1>
+      <p class="hero-subtitle">Guess campus locations. Compete with other Bobcats.</p>
+      <hr class="hero-divider">
+      <p class="hero-description">
+        Explore the UC Merced campus, test your knowledge, and climb the leaderboard.
+        Have fun and earn bragging rights!
+      </p>
+      <div id="preview-map" class="map-preview"></div>
+    </section>
+
+    <!-- Right: Login card -->
+    <div class="auth-card">
+      <span class="card-paw">🐾</span>
+      <h2>Sign In</h2>
+      <hr class="card-divider">
+
+      <div class="alerts">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <form action="{{ url_for('login') }}" method="POST">
+        <div class="field-group">
+          <label for="username">Username or Email</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input class="input" id="username" type="text" name="username" placeholder="Enter your username or email" required>
+          </div>
         </div>
-        <div>
-            <input class="input" type="password" name="password" placeholder="Password" required>
+        <div class="field-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input class="input" id="password" type="password" name="password" placeholder="Enter your password" required>
+          </div>
         </div>
-        <div>
-            <button class="button"type="submit">Sign In</button>
-        </div>
-    </form>
-    <p>Don't have an account? <a class="signup" href="{{ url_for('register')}}">Sign up</a></p>
+        <button class="button" type="submit">Log In</button>
+      </form>
+
+      <p class="auth-footer-text">
+        Don't have an account? <a class="signup" href="{{ url_for('register') }}">Register.</a>
+      </p>
     </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <span class="footer-paw">🐾</span>
+    PawPoint &copy; 2026 &mdash; Made by Bobcats, for Bobcats.
+  </footer>
+
+  <!-- Leaflet preview map (UC Merced campus) -->
+  <script src="{{ url_for('static', filename='carousel.js') }}"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('preview-map', { zoomControl: true, dragging: true, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20
+    }).addTo(map);
+    map.setView([37.3661, -120.4233], 16);
+  </script>
+
 </body>
 </html>
