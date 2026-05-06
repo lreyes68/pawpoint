@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawPoint — Play</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+ 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a2a4a;
+            color: #f0f0f0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+ 
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background-color: #0f1f3d;
+            border-bottom: 2px solid #d4a017;
+        }
+ 
+        .navbar .logo {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #d4a017;
+            text-decoration: none;
+        }
+ 
+        .navbar .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+ 
+        .navbar .nav-links a {
+            color: #f0f0f0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+ 
+        .navbar .nav-links a:hover {
+            color: #d4a017;
+        }
+ 
+        .btn-logout {
+            background-color: transparent;
+            color: #d4a017;
+            border: 1px solid #d4a017;
+            padding: 6px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+ 
+        .btn-logout:hover {
+            background-color: #d4a017;
+            color: #0f1f3d;
+        }
+ 
+        .game-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+        }
+ 
+        #map {
+            flex: 1;
+        }
+ 
+        .sidebar {
+            width: 280px;
+            background-color: #0f1f3d;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            border-left: 2px solid #d4a017;
+        }
+ 
+        .sidebar h2 {
+            color: #d4a017;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+ 
+        .sidebar p {
+            font-size: 0.9rem;
+            color: #ccc;
+            text-align: center;
+            line-height: 1.5;
+        }
+ 
+        .btn-submit {
+            width: 100%;
+            background-color: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+ 
+        .btn-submit:hover {
+            background-color: #b8860b;
+        }
+ 
+        .score-display {
+            background-color: #1a2a4a;
+            border: 1px solid #d4a017;
+            border-radius: 8px;
+            padding: 16px;
+            width: 100%;
+            text-align: center;
+        }
+ 
+        .score-display .label {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+ 
+        .score-display .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #d4a017;
+            margin-top: 4px;
+        }
+ 
+        .instructions {
+            font-size: 0.85rem;
+            color: #888;
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('main') }}" class="logo">🐾 PawPoint</a>
+        <div class="nav-links">
+            <a href="{{ url_for('main') }}">Home</a>
+            <a href="{{ url_for('leaderboard') }}">Leaderboard</a>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+        </div>
+    </nav>
+ 
+    <div class="game-container">
+        <div id="map"></div>
+        <div class="sidebar">
+            <h2>How to Play</h2>
+            <p>You'll be shown a photo from somewhere on the UC Merced campus. Click the map to place your guess!</p>
+ 
+            <div class="score-display">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+ 
+            <button class="btn-submit" id="map-button">Submit Guess</button>
+ 
+            <p class="instructions">The closer your guess, the more points you earn. 5 rounds per game.</p>
+        </div>
+    </div>
+ 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='game.js') }}"></script>
+</body>
+</html>
