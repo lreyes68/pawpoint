@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawPoint — Leaderboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+ 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a2a4a;
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+ 
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background-color: #0f1f3d;
+            border-bottom: 2px solid #d4a017;
+        }
+ 
+        .navbar .logo {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #d4a017;
+            text-decoration: none;
+        }
+ 
+        .navbar .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+ 
+        .navbar .nav-links a {
+            color: #f0f0f0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+ 
+        .navbar .nav-links a:hover {
+            color: #d4a017;
+        }
+ 
+        .btn-logout {
+            background-color: transparent;
+            color: #d4a017;
+            border: 1px solid #d4a017;
+            padding: 6px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+ 
+        .btn-logout:hover {
+            background-color: #d4a017;
+            color: #0f1f3d;
+        }
+ 
+        .content {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 0 24px;
+            width: 100%;
+        }
+ 
+        .content h1 {
+            color: #d4a017;
+            font-size: 1.8rem;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+ 
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #0f1f3d;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+ 
+        .leaderboard-table th {
+            background-color: #d4a017;
+            color: #0f1f3d;
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+ 
+        .leaderboard-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #253a5e;
+            font-size: 0.95rem;
+        }
+ 
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+ 
+        .leaderboard-table tr:hover td {
+            background-color: #1a2a4a;
+        }
+ 
+        .rank-1 { color: #ffd700; font-weight: bold; }
+        .rank-2 { color: #c0c0c0; font-weight: bold; }
+        .rank-3 { color: #cd7f32; font-weight: bold; }
+ 
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+ 
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+ 
+        .btn-play {
+            display: inline-block;
+            background-color: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            padding: 10px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+ 
+        .btn-play:hover {
+            background-color: #b8860b;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('main') }}" class="logo">🐾 PawPoint</a>
+        <div class="nav-links">
+            <a href="{{ url_for('main') }}">Home</a>
+            <a href="{{ url_for('game') }}">Play</a>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+        </div>
+    </nav>
+ 
+    <div class="content">
+        <h1>🏆 Leaderboard</h1>
+ 
+        {% if scores %}
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in scores %}
+                <tr>
+                    <td class="rank-{{ loop.index }}">{{ loop.index }}</td>
+                    <td>{{ entry.username }}</td>
+                    <td>{{ entry.score }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No scores yet. Be the first on the board!</p>
+            <a href="{{ url_for('game') }}" class="btn-play">Play Now</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
