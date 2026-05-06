@@ -3,21 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <title>pawpoint</title>
+    <title>PawPoint</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+ 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a2a4a;
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+ 
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            background-color: #0f1f3d;
+            border-bottom: 2px solid #d4a017;
+        }
+ 
+        .navbar .logo {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #d4a017;
+        }
+ 
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+ 
+        .navbar .user-info span {
+            font-size: 0.95rem;
+        }
+ 
+        .btn-logout {
+            background-color: transparent;
+            color: #d4a017;
+            border: 1px solid #d4a017;
+            padding: 6px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+ 
+        .btn-logout:hover {
+            background-color: #d4a017;
+            color: #0f1f3d;
+        }
+ 
+        .hero {
+            text-align: center;
+            padding: 60px 24px 30px;
+        }
+ 
+        .hero h1 {
+            font-size: 2.8rem;
+            color: #d4a017;
+            margin-bottom: 8px;
+        }
+ 
+        .hero p {
+            font-size: 1.1rem;
+            color: #aaa;
+        }
+ 
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            padding: 30px 24px 60px;
+            flex-wrap: wrap;
+        }
+ 
+        .card {
+            background-color: #0f1f3d;
+            border: 1px solid #253a5e;
+            border-radius: 12px;
+            width: 280px;
+            padding: 36px 28px;
+            text-align: center;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+ 
+        .card:hover {
+            border-color: #d4a017;
+            transform: translateY(-4px);
+        }
+ 
+        .card .icon {
+            font-size: 2.6rem;
+            margin-bottom: 16px;
+        }
+ 
+        .card h2 {
+            font-size: 1.3rem;
+            color: #f0f0f0;
+            margin-bottom: 10px;
+        }
+ 
+        .card p {
+            font-size: 0.9rem;
+            color: #999;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+ 
+        .card-link {
+            display: inline-block;
+            background-color: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            font-size: 0.95rem;
+            padding: 10px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+ 
+        .card-link:hover {
+            background-color: #b8860b;
+        }
+ 
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 20px;
+            color: #555;
+            font-size: 0.8rem;
+        }
+    </style>
 </head>
 <body>
-    <nav class="user-info">
-        <span>Welcome {{ current_user.username }}!</span>
-        <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+    <nav class="navbar">
+        <div class="logo">🐾 PawPoint</div>
+        <div class="user-info">
+            <span>{{ username }}</span>
+            <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+        </div>
     </nav>
-    <div class="mini-map">
-        <div id="map"></div>
-        <button id="map-button">GUESS</button>
+ 
+    <div class="hero">
+        <h1>🐾 PawPoint</h1>
+        <p>How well do you know UC Merced?</p>
     </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="{{ url_for('static', filename='game.js') }}"></script>
+ 
+    <div class="cards">
+        <div class="card">
+            <div class="icon">🗺️</div>
+            <h2>Play</h2>
+            <p>Test your knowledge of the UC Merced campus. Guess the location from a photo!</p>
+            <a href="{{ url_for('game') }}" class="card-link">Start Game</a>
+        </div>
+ 
+        <div class="card">
+            <div class="icon">🏆</div>
+            <h2>Leaderboard</h2>
+            <p>See how you stack up against other Bobcats. Top players earn bragging rights.</p>
+            <a href="{{ url_for('leaderboard') }}" class="card-link">View Rankings</a>
+        </div>
+ 
+        <div class="card">
+            <div class="icon">👥</div>
+            <h2>Our Team</h2>
+            <p>Meet the people behind PawPoint.</p>
+            <a href="{{ url_for('staff') }}" class="card-link">Meet the Team</a>
+        </div>
+    </div>
+ 
+    <footer>PawPoint &copy; 2026 — Made by Bobcats, for Bobcats.</footer>
 </body>
 </html>
