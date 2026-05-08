@@ -1,34 +1,36 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from flask_login import UserMixin, LoginManager, login_user, logout_user
 from dotenv import load_dotenv
 from flask_jwt_extended import set_access_cookies, create_access_token, JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
-
+ 
 import os
+import math
 from datetime import timedelta
-
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
-
+ 
 load_dotenv()
-
+ 
 #keeping values hidden, will help when we transition to web
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
-app.config['JWT_EXPIRATION_DELTA'] = timedelta(days=7)
-
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
-
-app.config['JWT_COOKIE_CSRF_PROTECT'] = True 
-
+ 
+# Require CSRF protection for cookie-based JWTs. Frontend requests to
+# state-changing @jwt_required() endpoints must include the CSRF token
+# from the csrf_access_token cookie in the X-CSRF-TOKEN header.
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+ 
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
-
+ 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True)
@@ -37,15 +39,34 @@ class User(UserMixin, db.Model):
     
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-
+ 
+#Function used to calculate distance between the guess and target.
+def calcDistance(lat1, lat2, lng1, lng2):
+    earth_radius = 3959 #miles
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lng1 = math.radians(lng1)
+    lng2 = math.radians(lng2)
+    
+    dlat = lat2 - lat1
+    dlng = lng2 - lng1
+    
+    hav = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlng/2)**2
+    
+    theta = 2*math.asin(math.sqrt(hav))
+    distance = earth_radius*theta
+    
+    #returns float
+    return distance
+ 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
+ 
 @app.route('/')
 def index():
     return redirect(url_for('login'))
-
+ 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     #Checks to see if user has already loggin in.
@@ -74,14 +95,35 @@ def login():
         
     #Renders the initial page    
     return render_template('login.html')
-
-#Routes to main page
+ 
+#Routes to hub page
 @app.route('/main')
 @jwt_required()
 def main():
     current_user = get_jwt_identity()
     return render_template('main.html', username=current_user)
-
+ 
+#Routes to game page
+@app.route('/game')
+@jwt_required()
+def game():
+    current_user = get_jwt_identity()
+    return render_template('game.html', username=current_user)
+ 
+#Routes to leaderboard
+@app.route('/leaderboard')
+@jwt_required()
+def leaderboard():
+    #TODO: pull scores from database
+    scores = []
+    return render_template('leaderboard.html', scores=scores)
+ 
+#Routes to staff page
+@app.route('/staff')
+@jwt_required()
+def staff():
+    return render_template('staff.html')
+ 
 #Registers User with hash encryption
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -114,6 +156,33 @@ def register():
             
             
     return render_template('register.html')
+ 
+#serverside guess processing
+@app.route('/guess', methods=['POST'])
+@jwt_required()
+def process_guess():
+    data = request.get_json()
+        
+    response_lat = data['lat']
+    response_lang = data['lang']
+    
+    #test data: CTK Quad 
+    #Should grab lat and lang from database when we have it ready
+    
+    target_lat = 37.36620076648134
+    target_lang = -120.42320671417902
+    
+    distance = calcDistance(response_lat, target_lat, response_lang, target_lang) * 5280 #Feet
+    
+    #Used to debug, will remove later
+    print(f"feet away: {round(distance, 1)}")
+    
+    #Sends the distance from the target and coordinates back to browser
+    return jsonify({
+        'distance': round(distance, 2),
+        "target": {"lat": target_lat, "lng": target_lang}
+    })
+ 
         
 @app.route('/logout')
 def logout():
@@ -122,7 +191,16 @@ def logout():
     unset_jwt_cookies(response)
     flash("Logged out", "info")
     return response
-
+ 
+#Runs once JWT token expires
+@jwt.expired_token_loader
+def expired_token(jwt_header, jwt_payload):
+    response = redirect(url_for('login'))
+    
+    unset_jwt_cookies(response)
+    
+    return response
+ 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
