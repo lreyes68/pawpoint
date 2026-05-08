@@ -23,8 +23,10 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
  
-#TODO: figureout how to use CSRF when sending player guess, weird cookie thing.
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False 
+# Require CSRF protection for cookie-based JWTs. Frontend requests to
+# state-changing @jwt_required() endpoints must include the CSRF token
+# from the csrf_access_token cookie in the X-CSRF-TOKEN header.
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
  
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
