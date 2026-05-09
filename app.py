@@ -5,15 +5,16 @@ from sqlalchemy.exc import IntegrityError
 from flask_login import UserMixin, LoginManager, login_user, logout_user
 from dotenv import load_dotenv
 from flask_jwt_extended import set_access_cookies, create_access_token, JWTManager, jwt_required, get_jwt_identity, unset_jwt_cookies
- 
+
 import os
 import math
-from datetime import timedelta
+import random
+from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
- 
+
 load_dotenv()
- 
+
 #keeping values hidden, will help when we transition to web
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -22,19 +23,86 @@ app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = False
- 
+
 #TODO: figureout how to use CSRF when sending player guess, weird cookie thing.
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False 
- 
+app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
- 
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+ROUND_DURATION  = 60   # seconds players have to guess
+BETWEEN_ROUNDS  = 10   # seconds to show results before next round starts
+STARTING_HP     = 6000
+BASE_DAMAGE     = 500  # HP lost per damage multiplier level
+INTERMISSION   = 10        # seconds between rounds
+
+# Campus locations pool  {name, photo filename, lat, lng}
+LOCATIONS = [
+    {"name": "CTK Quad",         "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 2",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 3",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 4",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 5",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 6",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 7",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 8",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 9",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 10",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 11",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 12",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 13",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 14",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 15",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 16",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 17",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 18",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 19",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 20",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 21",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 22",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 23",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 24",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "CTK Quad 25",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    # Add more locations here as you photograph them
+]
+
+# ---------------------------------------------------------------------------
+# Models
+# ---------------------------------------------------------------------------
+
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String, unique=True)
-    password = db.Column(db.String, nullable=False)
-    
-    
+    id           = db.Column(db.Integer, primary_key=True)
+    username     = db.Column(db.String, unique=True)
+    password     = db.Column(db.String, nullable=False)
+    best_streak  = db.Column(db.Integer, default=0)
+
+
+# Represents one round in the infinite public lobby
+class Round(db.Model):
+    id         = db.Column(db.Integer, primary_key=True)
+    location   = db.Column(db.String, nullable=False)   # JSON-encoded location dict
+    started_at = db.Column(db.DateTime, nullable=True)  # None = waiting for players
+    ends_at    = db.Column(db.DateTime, nullable=True)
+    finished   = db.Column(db.Boolean, default=False)
+
+
+# A player's slot in a round
+class RoundPlayer(db.Model):
+    id           = db.Column(db.Integer, primary_key=True)
+    round_id     = db.Column(db.Integer, db.ForeignKey('round.id'), nullable=False)
+    username     = db.Column(db.String, nullable=False)
+    hp           = db.Column(db.Integer, default=STARTING_HP)
+    current_streak = db.Column(db.Integer, default=0)
+    guess_lat    = db.Column(db.Float, nullable=True)
+    guess_lng    = db.Column(db.Float, nullable=True)
+    distance_ft  = db.Column(db.Float, nullable=True)   # filled after round ends
+    damage_taken = db.Column(db.Integer, nullable=True)
+    eliminated   = db.Column(db.Boolean, default=False)
+
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
  
@@ -45,17 +113,110 @@ def calcDistance(lat1, lat2, lng1, lng2):
     lat2 = math.radians(lat2)
     lng1 = math.radians(lng1)
     lng2 = math.radians(lng2)
-    
+
     dlat = lat2 - lat1
     dlng = lng2 - lng1
-    
+
     hav = math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlng/2)**2
-    
+    hav = min(1.0, max(0.0, hav))   # clamp to avoid floating-point ValueError
+
     theta = 2*math.asin(math.sqrt(hav))
     distance = earth_radius*theta
-    
+
     #returns float
     return distance
+
+
+def damage_multiplier(diff_ft):
+    """Return a damage multiplier based on how many feet farther a player was
+    compared to the best guesser of the round."""
+    if diff_ft <= 0:
+        return 0
+    elif diff_ft <= 100:
+        return 2
+    elif diff_ft <= 300:
+        return 3
+    elif diff_ft <= 600:
+        return 4
+    elif diff_ft <= 1200:
+        return 5
+    else:
+        return 6
+
+
+def get_or_create_current_round():
+    """Return the active (non-finished) round, creating one if needed."""
+    import json
+    current = Round.query.filter_by(finished=False).order_by(Round.id.desc()).first()
+    if current is None:
+        loc = random.choice(LOCATIONS)
+        current = Round(location=json.dumps(loc), finished=False)
+        db.session.add(current)
+        db.session.commit()
+    return current
+
+
+def active_player_count(round_id):
+    return RoundPlayer.query.filter_by(round_id=round_id, eliminated=False).count()
+
+
+def finish_round(round_obj):
+    """Score the round: apply damage, update streaks, then open a new round."""
+    import json
+    players = RoundPlayer.query.filter_by(round_id=round_obj.id, eliminated=False).all()
+
+    guessed = [p for p in players if p.distance_ft is not None]
+
+    if guessed:
+        best_dist = min(p.distance_ft for p in guessed)
+        for p in guessed:
+            diff = p.distance_ft - best_dist
+            mult = damage_multiplier(diff)
+            dmg = BASE_DAMAGE * mult
+            p.damage_taken = dmg
+            p.hp -= dmg
+            if p.hp <= 0:
+                p.hp = 0
+                p.eliminated = True
+            else:
+                p.current_streak += 1
+            # Always record best streak whether the player survives or is eliminated
+            user = User.query.filter_by(username=p.username).first()
+            if user and p.current_streak > user.best_streak:
+                user.best_streak = p.current_streak
+
+    # Players who never guessed take max damage
+    for p in players:
+        if p.distance_ft is None:
+            p.damage_taken = BASE_DAMAGE * 6
+            p.hp = max(0, p.hp - p.damage_taken)
+            if p.hp <= 0:
+                p.eliminated = True
+            user = User.query.filter_by(username=p.username).first()
+            if user and p.current_streak > user.best_streak:
+                user.best_streak = p.current_streak
+
+    round_obj.finished = True
+
+    # Create next round immediately so survivors carry over
+    loc = random.choice(LOCATIONS)
+    new_round = Round(location=json.dumps(loc), finished=False)
+    db.session.add(new_round)
+    db.session.flush()  # get new_round.id
+
+    # Carry surviving players into the new round
+    survivors = RoundPlayer.query.filter_by(round_id=round_obj.id, eliminated=False).all()
+    for p in survivors:
+        carry = RoundPlayer(
+            round_id=new_round.id,
+            username=p.username,
+            hp=p.hp,
+            current_streak=p.current_streak
+        )
+        db.session.add(carry)
+
+    db.session.commit()
+    return new_round
  
 @login_manager.user_loader
 def load_user(user_id):
@@ -112,8 +273,11 @@ def game():
 @app.route('/leaderboard')
 @jwt_required()
 def leaderboard():
-    #TODO: pull scores from database
-    scores = []
+    scores = (User.query
+              .filter(User.best_streak > 0)
+              .order_by(User.best_streak.desc())
+              .limit(50)
+              .all())
     return render_template('leaderboard.html', scores=scores)
  
 #Routes to staff page
@@ -155,50 +319,304 @@ def register():
             
     return render_template('register.html')
  
-#serverside guess processing
+#serverside guess processing (legacy single-player, kept for reference)
 @app.route('/guess', methods=['POST'])
 @jwt_required()
 def process_guess():
     data = request.get_json()
-        
     response_lat = data['lat']
     response_lang = data['lang']
-    
-    #test data: CTK Quad 
-    #Should grab lat and lang from database when we have it ready
-    
-    target_lat = 37.36620076648134
+    target_lat  = 37.36620076648134
     target_lang = -120.42320671417902
-    
-    distance = calcDistance(response_lat, target_lat, response_lang, target_lang) * 5280 #Feet
-    
-    #Used to debug, will remove later
-    print(f"feet away: {round(distance, 1)}")
-    
-    #Sends the distance from the target and coordinates back to browser
-    return jsonify({
-        'distance': round(distance, 2),
-        "target": {"lat": target_lat, "lng": target_lang}
-    })
- 
-        
+    distance = calcDistance(response_lat, target_lat, response_lang, target_lang) * 5280
+    return jsonify({'distance': round(distance, 2), "target": {"lat": target_lat, "lng": target_lang}})
+
+
+# Lobby / Multiplayer routes
+@app.route('/lobby/join', methods=['POST'])
+@jwt_required()
+def lobby_join():
+    """Join the public lobby. Returns the current round state."""
+    import json
+    username = get_jwt_identity()
+    round_obj = get_or_create_current_round()
+
+    # Check if player is already in this round
+    existing = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+
+    if existing and existing.eliminated:
+        # Player left and wants to rejoin — if the round is still waiting, let them back in
+        if not round_obj.started_at:
+            existing.eliminated  = False
+            existing.guess_lat   = None
+            existing.guess_lng   = None
+            existing.distance_ft = None
+            existing.damage_taken = None
+            db.session.commit()
+        # If the round is already running they have to wait; leave the eliminated flag in place
+    elif not existing:
+        # If the round is already running, player must wait for the next one
+        now = datetime.now(timezone.utc)
+        if round_obj.started_at and round_obj.ends_at:
+            ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
+            if now < ends_at_aware:
+                return jsonify({'status': 'waiting', 'message': 'Round in progress. You will join next round.'})
+
+        # Start fresh — survivors are already carried over by finish_round directly,
+        # so anyone reaching this code path should begin with full HP and a clean streak
+        hp     = STARTING_HP
+        streak = 0
+
+        new_player = RoundPlayer(round_id=round_obj.id, username=username, hp=hp, current_streak=streak)
+        db.session.add(new_player)
+        db.session.commit()
+
+    # Start the round if there are now >= 2 active non-eliminated players and it hasn't started yet
+    player_count = active_player_count(round_obj.id)
+    if not round_obj.started_at and player_count >= 2:
+        now = datetime.now(timezone.utc)
+        round_obj.started_at = now
+        round_obj.ends_at    = now + timedelta(seconds=ROUND_DURATION)
+        db.session.commit()
+
+    loc = json.loads(round_obj.location)
+    return jsonify(_round_state(round_obj, username))
+
+
+@app.route('/lobby/state', methods=['GET'])
+@jwt_required()
+def lobby_state():
+    """Poll this every few seconds to get the current round state."""
+    import json
+    username  = get_jwt_identity()
+    round_obj = get_or_create_current_round()
+
+    now = datetime.now(timezone.utc)
+
+    # Auto-finish round if time has expired
+    if round_obj.started_at and round_obj.ends_at and not round_obj.finished:
+        ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
+        if now >= ends_at_aware:
+            round_obj = finish_round(round_obj)
+
+    # Between-rounds window: keep showing the finished round (with results & flag) for
+    # BETWEEN_ROUNDS seconds so players can see where the location was before the next round.
+    last_finished = Round.query.filter_by(finished=True).order_by(Round.id.desc()).first()
+    if last_finished and last_finished.ends_at:
+        ends_at_aware = last_finished.ends_at.replace(tzinfo=timezone.utc)
+        gap = (now - ends_at_aware).total_seconds()
+        if 0 <= gap < BETWEEN_ROUNDS:
+            # Pre-register any observer (player not yet in the new round) during the
+            # interlude so they don't miss the join window due to the auto-start race.
+            next_round = get_or_create_current_round()
+            if not next_round.started_at and not next_round.finished:
+                obs_existing = RoundPlayer.query.filter_by(
+                    round_id=next_round.id, username=username).first()
+                if not obs_existing:
+                    obs_player = RoundPlayer(
+                        round_id=next_round.id,
+                        username=username,
+                        hp=STARTING_HP,
+                        current_streak=0
+                    )
+                    db.session.add(obs_player)
+                    db.session.commit()
+
+            state = _round_state(last_finished, username)
+            state['next_round_in'] = max(0, int(BETWEEN_ROUNDS - gap))
+            return jsonify(state)
+
+    # If we just finished the round but the window has already passed, refresh to the new round
+    if round_obj.finished:
+        round_obj = get_or_create_current_round()
+
+    # If an active round drops below 2 players, reset it to waiting without applying penalties
+    if round_obj.started_at and not round_obj.finished:
+        if active_player_count(round_obj.id) < 2:
+            round_obj.started_at = None
+            round_obj.ends_at = None
+            for p in RoundPlayer.query.filter_by(round_id=round_obj.id).all():
+                p.guess_lat   = None
+                p.guess_lng   = None
+                p.distance_ft = None
+                p.damage_taken = None
+            db.session.commit()
+
+    # Add observer to the new round BEFORE auto-starting, so they count toward the player total
+    # and don't get locked out because started_at gets set first.
+    # Also re-activate players whose eliminated flag was set by sendBeacon/refresh
+    # in an unstarted round so they aren't permanently locked out.
+    if not round_obj.started_at and not round_obj.finished:
+        existing = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+        if not existing:
+            new_player = RoundPlayer(
+                round_id=round_obj.id,
+                username=username,
+                hp=STARTING_HP,
+                current_streak=0
+            )
+            db.session.add(new_player)
+            db.session.commit()
+        elif existing.eliminated:
+            # Round hasn't started yet — let the player back in with reset stats
+            existing.eliminated  = False
+            existing.guess_lat   = None
+            existing.guess_lng   = None
+            existing.distance_ft = None
+            existing.damage_taken = None
+            db.session.commit()
+
+    # Auto-start a waiting round once 2+ active players are present
+    if not round_obj.started_at and not round_obj.finished:
+        if active_player_count(round_obj.id) >= 2:
+            now = datetime.now(timezone.utc)
+            round_obj.started_at = now
+            round_obj.ends_at    = now + timedelta(seconds=ROUND_DURATION)
+            db.session.commit()
+
+    return jsonify(_round_state(round_obj, username))
+
+
+@app.route('/lobby/guess', methods=['POST'])
+@jwt_required()
+def lobby_guess():
+    """Submit a guess for the current multiplayer round."""
+    import json
+    username = get_jwt_identity()
+    data     = request.get_json()
+
+    round_obj = Round.query.filter_by(finished=False).order_by(Round.id.desc()).first()
+    if not round_obj or not round_obj.started_at:
+        return jsonify({'error': 'No active round'}), 400
+
+    now = datetime.now(timezone.utc)
+    ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
+    if now > ends_at_aware:
+        return jsonify({'error': 'Round already ended'}), 400
+
+    player = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+    if not player:
+        return jsonify({'error': 'You are not in this round'}), 400
+    if player.guess_lat is not None:
+        return jsonify({'error': 'Already submitted a guess this round'}), 400
+
+    loc = json.loads(round_obj.location)
+    dist_ft = calcDistance(data['lat'], loc['lat'], data['lng'], loc['lng']) * 5280
+
+    player.guess_lat   = data['lat']
+    player.guess_lng   = data['lng']
+    player.distance_ft = round(dist_ft, 2)
+    db.session.commit()
+
+    return jsonify({'distance_ft': player.distance_ft})
+
+
+def _round_state(round_obj, username):
+    """Build the JSON payload describing the current round to send to the client."""
+    import json
+    now = datetime.now(timezone.utc)
+    loc = json.loads(round_obj.location)
+
+    player = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+    player_count = active_player_count(round_obj.id)
+
+    seconds_left = 0
+    if round_obj.started_at and round_obj.ends_at:
+        ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
+        seconds_left = max(0, int((ends_at_aware - now).total_seconds()))
+
+    state = {
+        'round_id':     round_obj.id,
+        'finished':     round_obj.finished,
+        'player_count': player_count,
+        'seconds_left': seconds_left,
+        'waiting':      player_count < 2 and not round_obj.started_at,
+        'location': {
+            'photo':  loc['photo'],
+            'name':   loc['name'],
+            'lat':    loc['lat'] if round_obj.finished else None,  # reveal after round
+            'lng':    loc['lng'] if round_obj.finished else None,
+        },
+        'me': None
+    }
+
+    if player:
+        state['me'] = {
+            'hp':            player.hp,
+            'current_streak': player.current_streak,
+            'eliminated':    player.eliminated,
+            'guessed':       player.guess_lat is not None,
+            'damage_taken':  player.damage_taken,
+            'distance_ft':   player.distance_ft,
+        }
+
+    if round_obj.finished:
+        # Send full results so the client can show the scoreboard
+        all_players = (RoundPlayer.query
+                       .filter_by(round_id=round_obj.id)
+                       .order_by(RoundPlayer.distance_ft.asc().nullslast())
+                       .all())
+        state['results'] = [
+            {
+                'username':    p.username,
+                'distance_ft': p.distance_ft,
+                'damage_taken': p.damage_taken,
+                'hp':          p.hp,
+                'eliminated':  p.eliminated,
+            }
+            for p in all_players
+        ]
+
+    return state
+
+
+@app.route('/lobby/leave', methods=['POST'])
+@jwt_required(optional=True)
+def lobby_leave():
+    """Remove the calling player from the current active round."""
+    username  = get_jwt_identity()
+    if not username:
+        return jsonify({'ok': True})  # unauthenticated (e.g. sendBeacon after logout)
+    round_obj = Round.query.filter_by(finished=False).order_by(Round.id.desc()).first()
+    if round_obj:
+        player = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+        if player and not player.eliminated:
+            player.eliminated     = True
+            player.hp             = STARTING_HP
+            player.current_streak = 0
+            db.session.commit()
+    return jsonify({'ok': True})
+
+
 @app.route('/logout')
 def logout():
+    # Remove player from active lobby if they were in one
+    try:
+        from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity as _get_identity
+        verify_jwt_in_request(locations=['cookies'], optional=True)
+        username = _get_identity()
+        if username:
+            round_obj = Round.query.filter_by(finished=False).order_by(Round.id.desc()).first()
+            if round_obj:
+                player = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
+                if player and not player.eliminated:
+                    player.eliminated = True
+                    db.session.commit()
+    except Exception:
+        pass
     logout_user()
     response = redirect(url_for('login'))
     unset_jwt_cookies(response)
     flash("Logged out", "info")
     return response
- 
+
 #Runs once JWT token expires
 @jwt.expired_token_loader
 def expired_token(jwt_header, jwt_payload):
     response = redirect(url_for('login'))
-    
     unset_jwt_cookies(response)
-    
     return response
- 
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
