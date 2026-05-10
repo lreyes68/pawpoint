@@ -392,7 +392,7 @@
                 <img id="campus-photo" src="{{ url_for('static', filename='photos/example.jpg') }}" crossorigin="anonymous">
             </a-assets>
             <a-sky src="#campus-photo" rotation="0 -130 0"></a-sky>
-            <a-camera look-controls wasd-controls="enabled: false"></a-camera>
+            <a-camera look-controls="reverseMouseDrag: true; reverseTouchDrag: true" wasd-controls="enabled: false"></a-camera>
         </a-scene>
 
         <div class="sidebar">

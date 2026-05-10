@@ -465,6 +465,7 @@ def lobby_guess():
     import json
     username = get_jwt_identity()
     data     = request.get_json()
+    now_utc_naive = datetime.now(timezone.utc).replace(tzinfo=None)
 
     round_obj = Round.query.filter_by(finished=False).order_by(Round.id.desc()).first()
     if not round_obj or not round_obj.started_at:
@@ -487,6 +488,14 @@ def lobby_guess():
     player.guess_lat   = data['lat']
     player.guess_lng   = data['lng']
     player.distance_ft = round(dist_ft, 2)
+    
+    active_players = RoundPlayer.query.filter_by(round_id=round_obj.id, eliminated=False).all()
+    if active_players and all(p.distance_ft is not None for p in active_players):
+        
+        new_end = now_utc_naive + timedelta(seconds=7)
+        if round_obj.ends_at > new_end:
+            round_obj.ends_at = new_end
+    
     db.session.commit()
 
     return jsonify({'distance_ft': player.distance_ft})
@@ -601,4 +610,4 @@ def expired_token(jwt_header, jwt_payload):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', debug=True, port=5001)
