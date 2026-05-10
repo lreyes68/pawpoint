@@ -166,7 +166,7 @@
                 <tr>
                     <th>Rank</th>
                     <th>Player</th>
-                    <th>Best Run</th>
+                    <th>Total Wins</th>
                 </tr>
             </thead>
             <tbody>
@@ -174,7 +174,7 @@
                 <tr>
                     <td class="rank-{{ loop.index }}">{{ loop.index }}</td>
                     <td>{{ entry.username }}</td>
-                    <td>{{ entry.best_streak }}</td>
+                    <td>{{ entry.total_wins }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

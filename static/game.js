@@ -273,22 +273,31 @@ function handleState(state) {
             revealTarget(state.location.lat, state.location.lng)
         }
 
-        // Interlude countdown
-        var nri = (state.next_round_in != null) ? state.next_round_in : 0
-        if (nri > 0) {
-            if (!interludeTimer || Math.abs(interludeSecondsLeft - nri) > 2) {
-                interludeSecondsLeft = nri
+        if (state.winner) {
+            if (state.me && state.winner === state.me.username) {
+                showWinnerModal()
+            } else if (state.winner === "Draw") {
+                setStatus("GAME OVER: It's a Draw!")
+            } else {
+                setStatus("GAME OVER: " + state.winner + " wins!")
             }
-            setStatus('Next round starts in ' + interludeSecondsLeft + 's…')
-            if (!interludeTimer) {
-                interludeTimer = setInterval(function() {
-                    if (interludeSecondsLeft > 0) interludeSecondsLeft--
-                    setStatus('Next round starts in ' + interludeSecondsLeft + 's…')
-                }, 1000)
-            }
-        } else {
-            setStatus('Round over! Waiting for next round…')
+            return
         }
+            nri = (state.next_round_in != null) ? state.next_round_in : 0
+            if (nri > 0) {
+                if (!interludeTimer || Math.abs(interludeSecondsLeft - nri) > 2) {
+                    interludeSecondsLeft = nri
+                }
+                setStatus('Next round starts in ' + interludeSecondsLeft + 's…')
+                if (!interludeTimer) {
+                    interludeTimer = setInterval(function() {
+                        if (interludeSecondsLeft > 0) interludeSecondsLeft--
+                        setStatus('Next round starts in ' + interludeSecondsLeft + 's…')
+                    }, 1000)
+                }
+            } else {
+                setStatus('Round over! Waiting for next round…')
+            }      
     }
 }
 
@@ -300,6 +309,17 @@ function showEliminatedModal() {
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
     if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null }
     document.getElementById('lost-modal').classList.add('show')
+}
+
+// ---- winner modal ------------------------------------------------------
+
+function showWinnerModal() {
+    clearResults()
+    // Stop all timers so nothing updates behind the modal
+    if (pollTimer)      { clearInterval(pollTimer);      pollTimer      = null }
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
+    if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null }
+    document.getElementById('winner-modal').classList.add('show')
 }
 
 // ---- leave modal  ----------------------------------------------------------
@@ -339,6 +359,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('lost-home').addEventListener('click', function() {
         // Server already marked us eliminated; just leave cleanly and go home
+        navigator.sendBeacon('/lobby/leave')
+        window.location.href = '/main'
+    })
+
+    document.getElementById('winner-home').addEventListener('click', function() {
+        // Server already marked us winners
         navigator.sendBeacon('/lobby/leave')
         window.location.href = '/main'
     })

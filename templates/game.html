@@ -335,6 +335,67 @@
         #leave-yes:hover { background: #b8860b; }
         #leave-no  { background: transparent; color: #d4a017; border: 1px solid #d4a017 !important; }
         #leave-no:hover { background: #d4a01722; }
+
+        #winner-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(0,0,0,0.55);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        #winner-modal.show {
+            display: flex;
+        }
+        .winner-box {
+            background: #0f1f3d;
+            border: 2px solid #d4a017;
+            border-radius: 14px;
+            padding: 40px 48px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+            font-size: 3.5rem;
+            margin-bottom: 12px
+        }
+        .winner-icon {
+            font-size: 3.5rem
+            margin-bottom: 12px
+        }
+
+        .winner-box h3 {
+            color: #d4a017; 
+            margin-bottom: 10px; 
+            font-size: 1.4rem;
+        }
+
+        .winner-box p { 
+            color: #ccc; 
+            font-size: 0.9rem; 
+            margin-bottom: 28px; 
+            line-height: 1.6; 
+        }
+        #winner-home {
+            display: inline-block;
+            background: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 12px 36px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        #winner-home:hover { 
+            background: #b8860b; 
+        }
     </style>
 </head>
 <body>
@@ -345,6 +406,16 @@
             <h3>You've Been Eliminated!</h3>
             <p>Your HP dropped to&nbsp;0. Better luck next time!<br>Your best streak has been saved to the leaderboard.</p>
             <button id="lost-home">Go Home</button>
+        </div>
+    </div>
+
+    <!-- Winner / You Won modal -->
+    <div id="winner-modal">
+        <div class="winner-box">
+            <div class="winner-icon">&#127942;</div>
+            <h3>Winner!! 🏆</h3>
+            <p>You outlasted everyone else!<br>Your win has been saved to the leaderboard.</p>
+            <button id="winner-home">Go Home</button>
         </div>
     </div>
 

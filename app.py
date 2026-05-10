@@ -59,6 +59,7 @@ class User(UserMixin, db.Model):
     username     = db.Column(db.String, unique=True)
     password     = db.Column(db.String, nullable=False)
     best_streak  = db.Column(db.Integer, default=0)
+    total_wins   = db.Column(db.Integer, default=0)
 
 
 # Represents one round in the infinite public lobby
@@ -68,6 +69,7 @@ class Round(db.Model):
     started_at = db.Column(db.DateTime, nullable=True)  # None = waiting for players
     ends_at    = db.Column(db.DateTime, nullable=True)
     finished   = db.Column(db.Boolean, default=False)
+    winner     = db.Column(db.String, nullable=True)
 
 
 # A player's slot in a round
@@ -180,24 +182,42 @@ def finish_round(round_obj):
     round_obj.finished = True
 
     # Create next round immediately so survivors carry over
-    loc = random.choice(LOCATIONS)
-    new_round = Round(location=json.dumps(loc), finished=False)
-    db.session.add(new_round)
-    db.session.flush()  # get new_round.id
+    # loc = random.choice(LOCATIONS)
+    # new_round = Round(location=json.dumps(loc), finished=False)
+    # db.session.add(new_round)
+    # db.session.flush()  # get new_round.id
 
     # Carry surviving players into the new round
     survivors = RoundPlayer.query.filter_by(round_id=round_obj.id, eliminated=False).all()
-    for p in survivors:
-        carry = RoundPlayer(
-            round_id=new_round.id,
-            username=p.username,
-            hp=p.hp,
-            current_streak=p.current_streak
-        )
-        db.session.add(carry)
-
-    db.session.commit()
-    return new_round
+    
+    if len(survivors) > 1:
+        loc = random.choice(LOCATIONS)
+        new_round = Round(location=json.dumps(loc), finished=False)
+        db.session.add(new_round)
+        db.session.flush()  # get new_round.id
+        
+        for p in survivors:
+            carry = RoundPlayer(
+                round_id=new_round.id,
+                username=p.username,
+                hp=p.hp,
+                current_streak=p.current_streak
+            )
+            db.session.add(carry)
+        db.session.commit()
+        return new_round
+    else:
+        if len(survivors) == 1:
+            winner_name = survivors[0].username
+            round_obj.winner = winner_name
+            
+            winner_user = User.query.filter_by(username=winner_name).first()
+            if winner_user:
+                winner_user.total_wins += 1
+        else:
+            round_obj.winner = "Draw"
+        db.session.commit()
+        return round_obj
  
 @login_manager.user_loader
 def load_user(user_id):
@@ -255,8 +275,8 @@ def game():
 @jwt_required()
 def leaderboard():
     scores = (User.query
-              .filter(User.best_streak > 0)
-              .order_by(User.best_streak.desc())
+              .filter(User.total_wins > 0)
+              .order_by(User.total_wins.desc())
               .limit(50)
               .all())
     return render_template('leaderboard.html', scores=scores)
@@ -518,6 +538,7 @@ def _round_state(round_obj, username):
     state = {
         'round_id':     round_obj.id,
         'finished':     round_obj.finished,
+        'winner':       round_obj.winner,
         'player_count': player_count,
         'seconds_left': seconds_left,
         'waiting':      player_count < 2 and not round_obj.started_at,
@@ -532,12 +553,13 @@ def _round_state(round_obj, username):
 
     if player:
         state['me'] = {
+            'username':      player.username,
             'hp':            player.hp,
             'current_streak': player.current_streak,
             'eliminated':    player.eliminated,
             'guessed':       player.guess_lat is not None,
             'damage_taken':  player.damage_taken,
-            'distance_ft':   player.distance_ft,
+            'distance_ft':   player.distance_ft,         
         }
 
     if round_obj.finished:
