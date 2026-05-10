@@ -41,31 +41,12 @@ INTERMISSION   = 10        # seconds between rounds
 
 # Campus locations pool  {name, photo filename, lat, lng}
 LOCATIONS = [
-    {"name": "CTK Quad",         "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 2",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 3",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 4",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 5",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 6",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 7",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 8",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 9",       "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 10",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 11",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 12",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 13",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 14",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 15",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 16",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 17",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 18",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 19",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 20",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 21",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 22",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 23",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 24",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
-    {"name": "CTK Quad 25",      "photo": "photos/example.jpg", "lat": 37.36620076648134,  "lng": -120.42320671417902},
+    {"name": "Photo 1",         "photo": "photos/12xz0210z.jpeg", "lat": 37.36261,  "lng": -120.42525},
+    {"name": "Photo 2",       "photo": "photos/AIzjioAIOAnx102.jpeg", "lat": 37.36289,  "lng": -120.42691},
+    {"name": "Photo 3",       "photo": "photos/asdasoaxoaskx.jpeg", "lat": 37.36493,  "lng": -120.42778},
+    {"name": "Photo 4",       "photo": "photos/aslkdmasdasd.jpeg", "lat": 37.36420,  "lng": -120.42727},
+    {"name": "Photo 5",       "photo": "photos/pvoigpovmpov.jpeg", "lat": 37.36384,  "lng": -120.42967},
+    
     # Add more locations here as you photograph them
 ]
 

@@ -19,6 +19,7 @@ var wasWaiting           = true
 var targetMarker         = null
 var targetLine           = null
 var eliminatedShown      = false
+var lastLoadedImage      = false
 
 // ---- helpers ----------------------------------------------------------------
 
@@ -94,14 +95,18 @@ function hideObserverOverlay() {
 // ---- photo swap  ------------------------------------------------------------
 
 function setPhoto(photoPath) {
+    if (photoPath === lastLoadedImage) return
+    lastLoadedImage = photoPath
+
     var sky  = document.querySelector('a-sky')
-    var img  = document.getElementById('campus-photo')
-    if (!sky || !img) return
-    var newSrc = '/static/' + photoPath
-    if (img.getAttribute('src') !== newSrc) {
-        img.setAttribute('src', newSrc)
-        sky.setAttribute('src', '#campus-photo')
-    }
+    if(!sky) return
+
+    // Ensures a photo refresh
+    var newSrc = '/static/' + photoPath + '?t=' + new Date().getTime()
+
+    sky.setAttribute('src', newSrc)
+
+    
 }
 
 // ---- target reveal  ---------------------------------------------------------
