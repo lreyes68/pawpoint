@@ -37,7 +37,8 @@ ROUND_DURATION  = 60   # seconds players have to guess
 BETWEEN_ROUNDS  = 10   # seconds to show results before next round starts
 STARTING_HP     = 6000
 BASE_DAMAGE     = 500  # HP lost per damage multiplier level
-INTERMISSION   = 10        # seconds between rounds
+INTERMISSION    = 10        # seconds between rounds
+LOBBY_WAIT_TIME = 10   #seconds until start of round when 2 players join
 
 # Campus locations pool  {name, photo filename, lat, lng}
 LOCATIONS = [
@@ -68,6 +69,7 @@ class Round(db.Model):
     location   = db.Column(db.String, nullable=False)   # JSON-encoded location dict
     started_at = db.Column(db.DateTime, nullable=True)  # None = waiting for players
     ends_at    = db.Column(db.DateTime, nullable=True)
+    wait_ends_at = db.Column(db.DateTime, nullable=True)
     finished   = db.Column(db.Boolean, default=False)
     winner     = db.Column(db.String, nullable=True)
 
@@ -385,10 +387,10 @@ def lobby_join():
 
     # Start the round if there are now >= 2 active non-eliminated players and it hasn't started yet
     player_count = active_player_count(round_obj.id)
-    if not round_obj.started_at and player_count >= 2:
+    if not round_obj.started_at and not round_obj.wait_ends_at and player_count >= 2:
         now = datetime.now(timezone.utc)
-        round_obj.started_at = now
-        round_obj.ends_at    = now + timedelta(seconds=ROUND_DURATION)
+        round_obj.wait_ends_at = now + timedelta(seconds=LOBBY_WAIT_TIME)
+        
         db.session.commit()
 
     loc = json.loads(round_obj.location)
@@ -459,11 +461,22 @@ def lobby_state():
     # If we just finished the round but the window has already passed, refresh to the new round
     if round_obj.finished:
         round_obj = get_or_create_current_round()
-
-    if not round_obj.started_at and not round_obj.finished:
-        if active_player_count(round_obj.id) >= 2:
+    
+    if round_obj.wait_ends_at and not round_obj.finished and not round_obj.started_at:
+        wait_ends_aware = round_obj.wait_ends_at.replace(tzinfo=timezone.utc)
+        if now >= wait_ends_aware:
             round_obj.started_at = now
             round_obj.ends_at = now + timedelta(seconds=ROUND_DURATION)
+            round_obj.wait_ends_at = None
+            db.session.commit()
+    if not round_obj.started_at and round_obj.wait_ends_at:
+        if active_player_count(round_obj.id) < 2:
+            round_obj.wait_ends_at = None
+            db.session.commit()
+    
+    if not round_obj.started_at and not round_obj.finished and not round_obj.wait_ends_at:
+        if active_player_count(round_obj.id) >= 2:
+            round_obj.wait_ends_at = now + timedelta(seconds=LOBBY_WAIT_TIME)
             db.session.commit()
     # Add observer to the new round BEFORE auto-starting, so they count toward the player total
     # and don't get locked out because started_at gets set first.
@@ -552,13 +565,18 @@ def _round_state(round_obj, username):
     if round_obj.started_at and round_obj.ends_at:
         ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
         seconds_left = max(0, int((ends_at_aware - now).total_seconds()))
-
+    lobby_wait_seconds = 0
+    if round_obj.wait_ends_at:
+        wait_ends_aware = round_obj.wait_ends_at.replace(tzinfo=timezone.utc)
+        lobby_wait_seconds = max (0, int((wait_ends_aware - now).total_seconds()))
+        
     state = {
         'round_id':     round_obj.id,
         'finished':     round_obj.finished,
         'winner':       round_obj.winner,
         'player_count': player_count,
         'seconds_left': seconds_left,
+        'lobby_wait_seconds': lobby_wait_seconds,
         'waiting':      player_count < 2 and not round_obj.started_at,
         'location': {
             'photo':  loc['photo'],

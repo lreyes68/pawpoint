@@ -163,6 +163,11 @@ function handleState(state) {
     }
     currentRoundId = state.round_id
 
+    if (!eliminatedShown && state.me && state.me.eliminated && state.me.hp === 0) {
+        eliminatedShown = true;
+        showEliminatedModal();
+    }
+
     if(state.finished && state.winner) {
         if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
         if (state.me && state.winner === state.me.username) {
@@ -224,6 +229,12 @@ function handleState(state) {
     // Player is in the round (or waiting) — dismiss observer overlay if it was showing
     hideObserverOverlay()
     document.getElementById('map-button').disabled = false
+
+    if (state.lobby_wait_seconds > 0) {
+        setStatus("Match starting in " + state.lobby_wait_seconds + "s...")
+            document.getElementById("timer").textContent = state.lobby_wait_seconds + 's'
+            return
+    }
 
     // Waiting for players
     if (state.waiting) {
@@ -312,6 +323,9 @@ function handleState(state) {
 
 function showEliminatedModal() {
     // Stop all timers so nothing updates behind the modal
+
+    navigator.sendBeacon('/lobby/leave')
+
     if (pollTimer)      { clearInterval(pollTimer);      pollTimer      = null }
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
     if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null }
@@ -323,6 +337,9 @@ function showEliminatedModal() {
 function showWinnerModal() {
     clearResults()
     // Stop all timers so nothing updates behind the modal
+
+    navigator.sendBeacon('/lobby/leave')
+
     if (pollTimer)      { clearInterval(pollTimer);      pollTimer      = null }
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
     if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null }

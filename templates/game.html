@@ -467,6 +467,13 @@
         </a-scene>
 
         <div class="sidebar">
+            <div style="display:flex;justify-content:space-between;width:100%;gap:6px">
+                <div class="score-display" style="flex:1">
+                    <div class="label">Time Left</div>
+                    <div class="value" id="timer">--</div>
+                </div>
+            </div>
+            
             <h2>Public Lobby</h2>
 
             <p id="status-msg" class="status-msg">Joining lobby…</p>
@@ -475,10 +482,6 @@
 
             <!-- Timer + streak + players row -->
             <div style="display:flex;justify-content:space-between;width:100%;gap:6px">
-                <div class="score-display" style="flex:1">
-                    <div class="label">Time Left</div>
-                    <div class="value" id="timer">--</div>
-                </div>
                 <div class="score-display" style="flex:1">
                     <div class="label">Rounds</div>
                     <div class="value" id="streak">0</div>
