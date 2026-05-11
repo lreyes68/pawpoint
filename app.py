@@ -193,6 +193,11 @@ def finish_round(round_obj):
     if len(survivors) > 1:
         loc = random.choice(LOCATIONS)
         new_round = Round(location=json.dumps(loc), finished=False)
+        
+        now = datetime.now(timezone.utc)
+        new_round.started_at = now
+        new_round.ends_at = now + timedelta(seconds=ROUND_DURATION)
+        
         db.session.add(new_round)
         db.session.flush()  # get new_round.id
         
@@ -218,6 +223,14 @@ def finish_round(round_obj):
             round_obj.winner = "Draw"
         db.session.commit()
         return round_obj
+ 
+def is_match_in_progress(round_id):
+    ongoing = RoundPlayer.query.filter(
+        RoundPlayer.round_id == round_id,
+        RoundPlayer.current_streak > 0
+    ).first()
+    return ongoing is not None
+     
  
 @login_manager.user_loader
 def load_user(user_id):
@@ -342,12 +355,15 @@ def lobby_join():
     username = get_jwt_identity()
     round_obj = get_or_create_current_round()
 
+    if round_obj.started_at or is_match_in_progress(round_obj.id):
+        return jsonify({'status': 'waiting', 'message': 'Match in progress. Wait for a winner.'})
+    
     # Check if player is already in this round
     existing = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
 
-    if existing and existing.eliminated:
+    if existing:
         # Player left and wants to rejoin — if the round is still waiting, let them back in
-        if not round_obj.started_at:
+        if existing.eliminated:
             existing.eliminated  = False
             existing.guess_lat   = None
             existing.guess_lng   = None
@@ -355,22 +371,17 @@ def lobby_join():
             existing.damage_taken = None
             db.session.commit()
         # If the round is already running they have to wait; leave the eliminated flag in place
-    elif not existing:
+    else:
         # If the round is already running, player must wait for the next one
-        now = datetime.now(timezone.utc)
-        if round_obj.started_at and round_obj.ends_at:
-            ends_at_aware = round_obj.ends_at.replace(tzinfo=timezone.utc)
-            if now < ends_at_aware:
-                return jsonify({'status': 'waiting', 'message': 'Round in progress. You will join next round.'})
-
-        # Start fresh — survivors are already carried over by finish_round directly,
-        # so anyone reaching this code path should begin with full HP and a clean streak
-        hp     = STARTING_HP
-        streak = 0
-
-        new_player = RoundPlayer(round_id=round_obj.id, username=username, hp=hp, current_streak=streak)
+        new_player = RoundPlayer(
+            round_id=round_obj.id,
+            username=username,
+            hp=STARTING_HP,
+            current_streak=0
+        )
         db.session.add(new_player)
         db.session.commit()
+
 
     # Start the round if there are now >= 2 active non-eliminated players and it hasn't started yet
     player_count = active_player_count(round_obj.id)
@@ -410,7 +421,9 @@ def lobby_state():
             # Pre-register any observer (player not yet in the new round) during the
             # interlude so they don't miss the join window due to the auto-start race.
             next_round = get_or_create_current_round()
-            if not next_round.started_at and not next_round.finished:
+            
+            #Oberserver may not join until it is the start of a new game.
+            if not next_round.started_at and not is_match_in_progress(next_round.id):
                 obs_existing = RoundPlayer.query.filter_by(
                     round_id=next_round.id, username=username).first()
                 if not obs_existing:
@@ -431,23 +444,14 @@ def lobby_state():
     if round_obj.finished:
         round_obj = get_or_create_current_round()
 
-    # If an active round drops below 2 players, reset it to waiting without applying penalties
-    if round_obj.started_at and not round_obj.finished:
-        if active_player_count(round_obj.id) < 2:
-            round_obj.started_at = None
-            round_obj.ends_at = None
-            for p in RoundPlayer.query.filter_by(round_id=round_obj.id).all():
-                p.guess_lat   = None
-                p.guess_lng   = None
-                p.distance_ft = None
-                p.damage_taken = None
-            db.session.commit()
 
     # Add observer to the new round BEFORE auto-starting, so they count toward the player total
     # and don't get locked out because started_at gets set first.
     # Also re-activate players whose eliminated flag was set by sendBeacon/refresh
     # in an unstarted round so they aren't permanently locked out.
     if not round_obj.started_at and not round_obj.finished:
+        if is_match_in_progress(round_obj.id):
+            return jsonify(_round_state(round_obj, username))
         existing = RoundPlayer.query.filter_by(round_id=round_obj.id, username=username).first()
         if not existing:
             new_player = RoundPlayer(
