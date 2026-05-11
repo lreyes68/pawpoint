@@ -163,6 +163,23 @@ function handleState(state) {
     }
     currentRoundId = state.round_id
 
+    if(state.finished && state.winner) {
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
+        if (state.me && state.winner === state.me.username) {
+            showWinnerModal()
+        } else if (state.winner === "Draw") {
+            setStatus("GAME OVER: It's a Draw!")
+        } else {
+            if (state.results){
+                showResults(state.results)
+            }
+            setStatus("GAME OVER: " + state.winner + " wins!")
+        }
+        if (state.location && state.location.lat != null) {
+            revealTarget(state.location.lat, state.location.lng)
+        }
+        return;
+    }
     // Update photo
     if (state.location && state.location.photo) {
         setPhoto(state.location.photo)
@@ -273,16 +290,6 @@ function handleState(state) {
             revealTarget(state.location.lat, state.location.lng)
         }
 
-        if (state.winner) {
-            if (state.me && state.winner === state.me.username) {
-                showWinnerModal()
-            } else if (state.winner === "Draw") {
-                setStatus("GAME OVER: It's a Draw!")
-            } else {
-                setStatus("GAME OVER: " + state.winner + " wins!")
-            }
-            return
-        }
             nri = (state.next_round_in != null) ? state.next_round_in : 0
             if (nri > 0) {
                 if (!interludeTimer || Math.abs(interludeSecondsLeft - nri) > 2) {

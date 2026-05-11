@@ -411,6 +411,22 @@ def lobby_state():
         if now >= ends_at_aware:
             round_obj = finish_round(round_obj)
 
+    if round_obj.started_at and not round_obj.finished:
+        count = active_player_count(round_obj.id)
+        if count < 2:
+            if count == 1:
+                survivor = RoundPlayer.query.filter_by(round_id=round_obj.id, eliminated=False).first()
+                if survivor:
+                    round_obj.winner = survivor.username
+                    winner_user = User.query.filter_by(username=survivor.username).first()
+                    if winner_user:
+                        winner_user.total_wins += 1
+            else:
+                round_obj.winner = "Draw"
+            round_obj.ends_at = now
+            round_obj.finished = True
+            db.session.commit()
+
     # Between-rounds window: keep showing the finished round (with results & flag) for
     # BETWEEN_ROUNDS seconds so players can see where the location was before the next round.
     last_finished = Round.query.filter_by(finished=True).order_by(Round.id.desc()).first()
@@ -444,7 +460,11 @@ def lobby_state():
     if round_obj.finished:
         round_obj = get_or_create_current_round()
 
-
+    if not round_obj.started_at and not round_obj.finished:
+        if active_player_count(round_obj.id) >= 2:
+            round_obj.started_at = now
+            round_obj.ends_at = now + timedelta(seconds=ROUND_DURATION)
+            db.session.commit()
     # Add observer to the new round BEFORE auto-starting, so they count toward the player total
     # and don't get locked out because started_at gets set first.
     # Also re-activate players whose eliminated flag was set by sendBeacon/refresh
@@ -472,12 +492,6 @@ def lobby_state():
             db.session.commit()
 
     # Auto-start a waiting round once 2+ active players are present
-    if not round_obj.started_at and not round_obj.finished:
-        if active_player_count(round_obj.id) >= 2:
-            now = datetime.now(timezone.utc)
-            round_obj.started_at = now
-            round_obj.ends_at    = now + timedelta(seconds=ROUND_DURATION)
-            db.session.commit()
 
     return jsonify(_round_state(round_obj, username))
 
