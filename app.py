@@ -9,6 +9,7 @@ from flask_jwt_extended import set_access_cookies, create_access_token, JWTManag
 import os
 import math
 import random
+import re
 from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
@@ -57,7 +58,7 @@ LOCATIONS = [
 
 class User(UserMixin, db.Model):
     id           = db.Column(db.Integer, primary_key=True)
-    username     = db.Column(db.String, unique=True)
+    username     = db.Column(db.String(25), unique=True)
     password     = db.Column(db.String, nullable=False)
     best_streak  = db.Column(db.Integer, default=0)
     total_wins   = db.Column(db.Integer, default=0)
@@ -312,6 +313,16 @@ def register():
         #Data validation check
         if not username or not password:
             flash("All fields are required", "danger")
+            return render_template("register.html")
+        
+        if len(username) > 25:
+            flash("Username must be 25 characters or less.", "warning")
+            
+        if len(username) < 3:
+            flash("Username must be at least 3 characters", "warning")
+        
+        if not re.match(r"^[a-zA-Z0-9_]+$", username):
+            flash("Username can only contain letters, numbers, and underscores.", "danger")
             return render_template("register.html")
         
         #creates encrypted password
