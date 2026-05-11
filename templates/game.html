@@ -404,7 +404,7 @@
         <div class="lost-box">
             <div class="lost-skull">&#x2620;&#xFE0F;</div>
             <h3>You've Been Eliminated!</h3>
-            <p>Your HP dropped to&nbsp;0. Better luck next time!<br>Your best streak has been saved to the leaderboard.</p>
+            <p>Your HP dropped to&nbsp;0. Better luck next time!<br>Your win has been saved to the leaderboard.</p>
             <button id="lost-home">Go Home</button>
         </div>
     </div>
@@ -436,7 +436,6 @@
         <div class="nav-links">
             <a href="{{ url_for('main') }}" class="nav-leave" data-href="{{ url_for('main') }}">Home</a>
             <a href="{{ url_for('leaderboard') }}" class="nav-leave" data-href="{{ url_for('leaderboard') }}">Leaderboard</a>
-            <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
         </div>
     </nav>
 
@@ -453,8 +452,6 @@
                 <div class="obs-icon">⏳</div>
                 <h3>Round In Progress</h3>
                 <p>You joined while a round was already underway.<br>Sit tight — you'll jump in automatically!</p>
-                <p>Next round begins in:</p>
-                <div class="obs-countdown" id="obs-countdown">--</div>
             </div>
         </div>
 
