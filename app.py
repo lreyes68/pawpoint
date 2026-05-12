@@ -25,8 +25,6 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 #!!! set True in production !!!
 app.config['JWT_COOKIE_SECURE'] = True
 
-#TODO: figureout how to use CSRF when sending player guess, weird cookie thing.
-app.config['JWT_COOKIE_CSRF_PROTECT'] = False
 
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
