@@ -158,53 +158,353 @@
             color: #d4a017;
             margin-top: 4px;
         }
- 
+
+        .hp-bar-wrap {
+            width: 100%;
+            background-color: #253a5e;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 14px;
+        }
+
+        .hp-bar-fill {
+            height: 100%;
+            width: 100%;
+            background-color: #4caf50;
+            transition: width 0.4s, background-color 0.4s;
+        }
+
+        .status-msg {
+            font-size: 0.82rem;
+            color: #aaa;
+            text-align: center;
+            min-height: 1.2em;
+        }
+
         .instructions {
             font-size: 0.85rem;
             color: #888;
             text-align: center;
             line-height: 1.6;
         }
+
+        /* Results overlay — covers the 360° image area during the interlude */
+        #results-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 280px; /* leaves sidebar visible */
+            bottom: 0;
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.55);
+            pointer-events: none;
+        }
+        #results-overlay.show {
+            display: flex;
+            pointer-events: auto;
+        }
+
+        /* Observer overlay — shown to players who joined mid-round */
+        #observer-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 280px;
+            bottom: 0;
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+        #observer-overlay.show { display: flex; }
+        .observer-popup {
+            background: #0f1f3d;
+            border: 2px solid #d4a017;
+            border-radius: 14px;
+            padding: 36px 44px;
+            text-align: center;
+            max-width: 420px;
+            width: 80%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        }
+        .observer-popup .obs-icon { font-size: 2.8rem; margin-bottom: 10px; }
+        .observer-popup h3 { color: #d4a017; font-size: 1.2rem; margin-bottom: 10px; }
+        .observer-popup p  { color: #ccc; font-size: 0.9rem; line-height: 1.6; margin-bottom: 6px; }
+        .observer-popup .obs-countdown { color: #d4a017; font-size: 1.6rem; font-weight: bold; margin-top: 10px; }
+        .results-popup {
+            background: #0f1f3d;
+            border: 2px solid #d4a017;
+            border-radius: 14px;
+            padding: 28px 36px;
+            width: 78%;
+            max-width: 580px;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+        }
+        .results-popup h3 {
+            color: #d4a017;
+            margin-bottom: 12px;
+            font-size: 1.15rem;
+            text-align: center;
+        }
+        .results-popup table { width: 100%; border-collapse: collapse; font-size: 0.88rem; color: #f0f0f0; }
+        .results-popup th, .results-popup td { padding: 6px 10px; }
+        .results-popup th { color: #d4a017; border-bottom: 1px solid #253a5e; text-align: left; }
+        .results-popup tr + tr td { border-top: 1px solid #1a2a4a; }
+
+        /* You-were-eliminated modal */
+        #lost-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(0,0,0,0.55);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        #lost-modal.show { display: flex; }
+        .lost-box {
+            background: #0f1f3d;
+            border: 2px solid #c0392b;
+            border-radius: 14px;
+            padding: 40px 48px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+        }
+        .lost-box .lost-skull { font-size: 3.5rem; margin-bottom: 12px; }
+        .lost-box h3 { color: #e74c3c; margin-bottom: 10px; font-size: 1.4rem; }
+        .lost-box p  { color: #ccc; font-size: 0.9rem; margin-bottom: 28px; line-height: 1.6; }
+        #lost-home {
+            display: inline-block;
+            background: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 12px 36px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        #lost-home:hover { background: #b8860b; }
+
+        /* Leave-game confirmation modal */
+        #leave-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        #leave-modal.show { display: flex; }
+        .leave-box {
+            background: #0f1f3d;
+            border: 2px solid #d4a017;
+            border-radius: 12px;
+            padding: 32px 40px;
+            text-align: center;
+            max-width: 340px;
+            width: 90%;
+        }
+        .leave-box h3 { color: #d4a017; margin-bottom: 12px; font-size: 1.2rem; }
+        .leave-box p  { color: #ccc; font-size: 0.9rem; margin-bottom: 24px; }
+        .leave-btns   { display: flex; gap: 12px; justify-content: center; }
+        .leave-btns button {
+            padding: 10px 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: none;
+        }
+        #leave-yes { background: #d4a017; color: #0f1f3d; }
+        #leave-yes:hover { background: #b8860b; }
+        #leave-no  { background: transparent; color: #d4a017; border: 1px solid #d4a017 !important; }
+        #leave-no:hover { background: #d4a01722; }
+
+        #winner-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(0,0,0,0.55);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        #winner-modal.show {
+            display: flex;
+        }
+        .winner-box {
+            background: #0f1f3d;
+            border: 2px solid #d4a017;
+            border-radius: 14px;
+            padding: 40px 48px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+        .winner-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .winner-box h3 {
+            color: #d4a017; 
+            margin-bottom: 10px; 
+            font-size: 1.4rem;
+        }
+
+        .winner-box p { 
+            color: #ccc; 
+            font-size: 0.9rem; 
+            margin-bottom: 28px; 
+            line-height: 1.6; 
+        }
+        #winner-home {
+            display: inline-block;
+            background: #d4a017;
+            color: #0f1f3d;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 12px 36px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        #winner-home:hover { 
+            background: #b8860b; 
+        }
     </style>
 </head>
 <body>
+    <!-- Eliminated / You Lost modal -->
+    <div id="lost-modal">
+        <div class="lost-box">
+            <div class="lost-skull">&#x2620;&#xFE0F;</div>
+            <h3>You've Been Eliminated!</h3>
+            <p>Your HP dropped to&nbsp;0. Better luck next time!<br>Your win has been saved to the leaderboard.</p>
+            <button id="lost-home">Go Home</button>
+        </div>
+    </div>
+
+    <!-- Winner / You Won modal -->
+    <div id="winner-modal">
+        <div class="winner-box">
+            <div class="winner-icon">&#127942;</div>
+            <h3>Winner!! 🏆</h3>
+            <p>You outlasted everyone else!<br>Your win has been saved to the leaderboard.</p>
+            <button id="winner-home">Go Home</button>
+        </div>
+    </div>
+
+    <!-- Leave-game modal -->
+    <div id="leave-modal">
+        <div class="leave-box">
+            <h3>Leave Current Game?</h3>
+            <p>You will be removed from the active lobby. Your HP and streak will reset next time you join.</p>
+            <div class="leave-btns">
+                <button id="leave-yes">Yes, Leave</button>
+                <button id="leave-no">Stay</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar">
-        <a href="{{ url_for('main') }}" class="logo">🐾 PawPoint</a>
+        <a href="{{ url_for('main') }}" class="logo nav-leave" data-href="{{ url_for('main') }}">🐾 PawPoint</a>
         <div class="nav-links">
-            <a href="{{ url_for('main') }}">Home</a>
-            <a href="{{ url_for('leaderboard') }}">Leaderboard</a>
-            <a href="{{ url_for('logout') }}" class="btn-logout">Sign out</a>
+            <a href="{{ url_for('main') }}" class="nav-leave" data-href="{{ url_for('main') }}">Home</a>
+            <a href="{{ url_for('leaderboard') }}" class="nav-leave" data-href="{{ url_for('leaderboard') }}">Leaderboard</a>
         </div>
     </nav>
- 
+
     <div class="game-container">
+
+        <!-- Results overlay (shows during interlude, over the 360° image only) -->
+        <div id="results-overlay">
+            <div class="results-popup" id="results-box"></div>
+        </div>
+
+        <!-- Observer overlay (shown to players who joined mid-round) -->
+        <div id="observer-overlay">
+            <div class="observer-popup">
+                <div class="obs-icon">⏳</div>
+                <h3>Round In Progress</h3>
+                <p>You joined while a round was already underway.<br>Sit tight — you'll jump in automatically!</p>
+            </div>
+        </div>
 
         <a-scene embedded vr-mode-ui="enabled: false" loading-screen="enabled: false">
             <a-assets>
-                <!-- Replace the src with your actual photo path -->
                 <img id="campus-photo" src="{{ url_for('static', filename='photos/example.jpg') }}" crossorigin="anonymous">
             </a-assets>
             <a-sky src="#campus-photo" rotation="0 -130 0"></a-sky>
-            <a-camera look-controls wasd-controls="enabled: false"></a-camera>
+            <a-camera look-controls="reverseMouseDrag: true; reverseTouchDrag: true" wasd-controls="enabled: false"></a-camera>
         </a-scene>
- 
+
         <div class="sidebar">
-            <h2>How to Play</h2>
-            <p>You'll be shown a photo from somewhere on the UC Merced campus. Click the map to place your guess!</p>
- 
+            <div style="display:flex;justify-content:space-between;width:100%;gap:6px">
+                <div class="score-display" style="flex:1">
+                    <div class="label">Time Left</div>
+                    <div class="value" id="timer">--</div>
+                </div>
+            </div>
+            
+            <h2>Public Lobby</h2>
+
+            <p id="status-msg" class="status-msg">Joining lobby…</p>
+
             <div id="map"></div>
 
-            <div class="score-display">
-                <div class="label">Score</div>
-                <div class="value" id="score">0</div>
+            <!-- Timer + streak + players row -->
+            <div style="display:flex;justify-content:space-between;width:100%;gap:6px">
+                <div class="score-display" style="flex:1">
+                    <div class="label">Rounds</div>
+                    <div class="value" id="streak">0</div>
+                </div>
+                <div class="score-display" style="flex:1">
+                    <div class="label">Players</div>
+                    <div class="value" id="player-count">--</div>
+                </div>
             </div>
- 
+
+            <!-- HP bar -->
+            <div style="width:100%">
+                <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:#999;margin-bottom:4px">
+                    <span>HP</span><span id="hp-label">6000 HP</span>
+                </div>
+                <div class="hp-bar-wrap">
+                    <div class="hp-bar-fill" id="hp-bar"></div>
+                </div>
+            </div>
+
             <button class="btn-submit" id="map-button">Submit Guess</button>
- 
-            <p class="instructions">The closer your guess, the more points you earn. 5 rounds per game.</p>
+
+            <p class="instructions">Closer guess = less damage. Survive as many rounds as you can!</p>
         </div>
     </div>
- 
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
 </body>
