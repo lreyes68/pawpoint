@@ -14,16 +14,16 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 
-load_dotenv()
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 #keeping values hidden, will help when we transition to web
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')  or 'sqlite:///' + os.path.join(basedir, 'instance', 'app.db')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)
 #!!! set True in production !!!
-app.config['JWT_COOKIE_SECURE'] = False
+app.config['JWT_COOKIE_SECURE'] = True
 
 #TODO: figureout how to use CSRF when sending player guess, weird cookie thing.
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False
